@@ -178,7 +178,7 @@ class Maze:
     
     """Save the maze as a file.txt"""
     def save_maze(self):
-        with open(f"{self.name}.txt", "w") as f:
+        with open(f"mazes/{self.name}.txt", "w") as f:
             for lane in self.draw_maze():
                 for cell in lane:
                     f.write(cell)
