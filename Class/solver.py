@@ -119,9 +119,12 @@ class Solver:
             """if the current cell is the exit, stop the loop"""
             if current_cell == end:
                 print("found exit")
-
-                for x in self.reconstruct_path(parent, current_cell):
-                    self.board[x[0]][x[1]] = "o"
+                """Reconstruct the path and mark it with o, mark the explored cells with * """
+                for cell in self.reconstruct_path(parent, current_cell):
+                    for visited in closed_list:
+                        if visited not in self.reconstruct_path(parent, current_cell):
+                            self.board[visited[0]][visited[1]] = "*"
+                    self.board[cell[0]][cell[1]] = "o"
                 return
             else:
                 closed_list.append(current_cell)
