@@ -1,4 +1,5 @@
 import random
+from PIL import Image, ImageDraw
 
 class Solver:
 
@@ -47,6 +48,8 @@ class Solver:
         if cell == self.exit:
             print('')
             print("found exit")
+            if self.opening in self.visited:
+                self.visited.remove(self.opening)
             for cell in self.path:
                 for visited in self.visited:
                     if visited not in self.path:
@@ -59,6 +62,7 @@ class Solver:
             self.path.append(cell)
         """Check the neighbours of the cell"""
         for direction in self.neighbors:
+            """If the neighbour is unvisited, append the direction to the list of possible directions"""
             if self.board[self.neighbors[direction][0]][self.neighbors[direction][1]] != "#":
                 if self.neighbors[direction] not in self.visited:
                     directions.append(direction)
@@ -88,18 +92,31 @@ class Solver:
     """reconstruct the path"""
     def reconstruct_path(self, parent:dict, current_cell:tuple) -> list:
         """Create a list of the path"""
-        path = []
-        while current_cell in parent:
-            path.append(current_cell)
-            current_cell = parent[current_cell]
-        return path[::-1]
+
+        """Optimize the code
+        using extend instead of append and reverse the list at the end"""
+        # path = []
+        # while current_cell in parent:
+        #     path.append(current_cell)
+        #     # path.extend(current_cell)
+        #     current_cell = parent[current_cell]
+        # return path[::-1]
     
+        path = [self.exit]
+        while current_cell in parent:
+            path.extend([current_cell])
+            current_cell = parent[current_cell]
+        self.path = path[::-1]
+        return 
+
     """A* algorithm"""
     def AStar(self) -> None:
         start = self.entrance
         end = self.exit
         open_list = []
+        # open_list = set()
         closed_list = []
+        # closed_list = set()
         h = self.heuristic(start, end)
         g = {start: 0}
         f = {start: h+g[start]}
@@ -108,11 +125,16 @@ class Solver:
 
         """Add the start cell to the open list"""
         open_list.append(start)
+        # open_list.add(start)
 
         """While the open list is not empty"""
         while len(open_list) > 0:
             """sort the open list by f value"""
             open_list.sort(key=lambda x: f[x])
+            # open_list = sorted(open_list, key=lambda x: f[x])
+            # print(open_list)
+            # open_list = sorted(open_list, key=lambda x: f[x])
+            # print(open_list)
             """Remove the current node from the open list"""
             current_cell = open_list.pop(0)
 
@@ -120,19 +142,25 @@ class Solver:
             if current_cell == end:
                 print("found exit")
                 """Reconstruct the path and mark it with o, mark the explored cells with * """
-                for cell in self.reconstruct_path(parent, current_cell):
+                path = self.reconstruct_path(parent, current_cell)
+                # self.reconstruct_path(parent, current_cell)
+                for cell in self.path:
                     for visited in closed_list:
-                        if visited not in self.reconstruct_path(parent, current_cell):
+                        if visited not in self.path:
                             self.board[visited[0]][visited[1]] = "*"
                     self.board[cell[0]][cell[1]] = "o"
                 return
             else:
                 closed_list.append(current_cell)
+                # closed_list.add(current_cell)
 
             """Check the neighbours of the cell"""
             self.check_neighbours(current_cell)
             """For each direction filter the valid moves"""
             directions = []
+            # directions = list(filter(lambda x: self.board[self.neighbors[x][0]][self.neighbors[x][1]] != "#", self.neighbors))
+            # directions = set()
+
             for direction in self.neighbors:
                 
                 """Check if the neighbour exists"""
@@ -142,6 +170,7 @@ class Solver:
                         if self.neighbors[direction] != self.opening:
                             if self.neighbors[direction] not in closed_list:
                                 directions.append(direction)
+                                # directions.add(direction)
            
             """For each direction (successor)"""
             for direction in directions:
@@ -168,10 +197,13 @@ class Solver:
                 """Remove the neighbour from the open list and the closed list"""
                 if self.neighbors[direction] in open_list:
                     open_list.remove(self.neighbors[direction])
+                # open_list.discard(self.neighbors[direction])
                 if self.neighbors[direction] in closed_list:
                     closed_list.remove(self.neighbors[direction])
+                # closed_list.discard(self.neighbors[direction])
                 """Add the neighbour to the open list"""
                 open_list.append(self.neighbors[direction])
+                # open_list.add(self.neighbors[direction])
 
     """Draw the maze"""
     def draw_maze(self) -> None:
@@ -181,14 +213,32 @@ class Solver:
             for cell in row:
                 print(cell, end=" ")
             print()
-        return self.board
         
     """Save the maze as a file.txt"""
     def save_maze(self, name:str):
         with open(f"mazes/{name}.txt", "w") as f:
-            for lane in self.draw_maze():
+            for lane in self.board:
                 for cell in lane:
                     f.write(cell)
                 f.write("\n")
-        print(f"File {name}.txt saved")
-        print()
+
+    """Ascii to JPG"""
+    def ascii_to_jpg(self, name:str):
+        maze = self.board
+        img = Image.new("RGB", (len(maze) * 10, len(maze) * 10), color="white")
+        draw = ImageDraw.Draw(img)
+        for i in range(len(maze)):
+            for j in range(len(maze)):
+                if maze[i][j] == "#":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="black")
+                elif maze[i][j] == ".":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="white")
+                elif maze[i][j] == "o":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="red")
+                elif maze[i][j] == "*":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="purple")
+                elif maze[i][j] == "S":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="green")
+                elif maze[i][j] == "E":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="blue")
+        img.save(f"mazes/{name}.jpg")

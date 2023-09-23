@@ -1,18 +1,19 @@
 from Class.cell import Cell
 import random
+from PIL import Image, ImageDraw
 
 class Maze:
     
-    def __init__(self, n:int, name:str="Maze") -> None:
+    def __init__(self, n:int) -> None:
         self.n = n
-        self.name = name
+        # self.name = name
         self.entrance = (0, 0)
         self.exit = (n - 1, n - 1)
         self.board = [[Cell(i, j) for j in range(n)] for i in range(n)]
         self.neighbors = {"LEFT": None, "RIGHT": None, "UP": None, "DOWN": None}
         self.stack = []
         self.iteration = 0
-        self.visited = []
+        self.visited = set()
 
     """Check the neighbours of the cell"""
     def check_neighbours(self, cell:tuple) -> None:
@@ -47,13 +48,10 @@ class Maze:
         
         """Check if all cells are visited"""
         if len(self.visited) == self.n*self.n:
-            print("visited all cells")
-            print(f"visited: {self.visited}")
             return 
         
         """Check if the cell has any unvisited neighbours"""
-        if cell.pos not in self.visited:
-            self.visited.append(cell.pos)
+        self.visited.add(cell.pos)
 
         """Check the neighbours of the cell"""
         for direction in self.neighbors:
@@ -78,18 +76,26 @@ class Maze:
     
     """Kruskal's algorithm"""
     def kruskal(self):
-        ids = []
+        """Replace ids list with a set -> faster (code optimization))"""
+        # ids = []
+        ids = set()
+
         iteration = 0
         """Assign an id to each cell"""
         for cell in self.board:
             for c in cell:
                 c.id = iteration
-                ids.append(c.id)
+                # ids.(c.id)
+                ids.add(c.id)
                 iteration += 1
+        
+        r = 0
 
         """While there are still ids in the list of ids"""
-        while len(ids) > 1:
-            id = random.choice(ids)
+        # while len(ids) > 1:
+        while r < (self.n*self.n)-1:
+            # id = random.choice(ids)
+            id = random.choice(tuple(ids))
             """Find the cell with the id"""
             for cell in self.board:
                 for c in cell:
@@ -113,12 +119,14 @@ class Maze:
                 """Break the wall between the cell and the next cell"""
                 if current_cell.id != next_cell.id:
                     current_cell.break_wall(direction, next_cell)
+                    r += 1
                     """Change the id of the next cell to the id of the cell"""
                     if current_cell.id > next_cell.id:
                         id_to_remove = current_cell.id
                         """Remove the id of the cell from the list of ids"""
                         if current_cell.id in ids:
-                            ids.remove(current_cell.id)
+                            # ids.remove(current_cell.id)
+                            ids.discard(current_cell.id)
                         """Change the id of all the cells with the id of the next cell"""
                         for cell in self.board:
                             for c in cell:
@@ -129,7 +137,8 @@ class Maze:
                         id_to_remove = next_cell.id
                         """Remove the id of the next cell from the list of ids"""
                         if next_cell.id in ids:
-                            ids.remove(next_cell.id)
+                            # ids.remove(next_cell.id)
+                            ids.discard(next_cell.id)
                         """Change the id of all the cells with the id of the cell"""
                         for cell in self.board:
                             for c in cell:
@@ -181,17 +190,15 @@ class Maze:
                 print(cell, end=" ")
             print("")
         print()
-        return maze
     
     """Save the maze as a file.txt"""
-    def save_maze(self):
-        with open(f"mazes/{self.name}.txt", "w") as f:
-            for lane in self.draw_maze():
+    def save_maze(self, name:str):
+        maze = self.convert_to_maze()
+        with open(f"mazes/{name}.txt", "w") as f:
+            for lane in maze:
                 for cell in lane:
                     f.write(cell)
                 f.write("\n")
-        print(f"File {self.name}.txt saved")
-        return f"{self.name}.txt"
 
     """Print the maze in the console"""
     def print_maze(self):
@@ -216,3 +223,24 @@ class Maze:
                 else:
                     print(" ", end="")
             print("")
+    
+        """Ascii to JPG"""
+    def ascii_to_jpg(self, name:str):
+        maze = self.convert_to_maze()
+        img = Image.new("RGB", (len(maze) * 10, len(maze) * 10), color="white")
+        draw = ImageDraw.Draw(img)
+        for i in range(len(maze)):
+            for j in range(len(maze)):
+                if maze[i][j] == "#":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="black")
+                elif maze[i][j] == ".":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="white")
+                elif maze[i][j] == "o":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="red")
+                elif maze[i][j] == "*":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="purple")
+                elif maze[i][j] == "S":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="green")
+                elif maze[i][j] == "E":
+                    draw.rectangle(((j * 10, i * 10), (j * 10 + 10, i * 10 + 10)), fill="blue")
+        img.save(f"mazes/{name}.jpg")

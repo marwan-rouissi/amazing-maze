@@ -5,11 +5,12 @@ class Cell:
         self.isvisited = False
         self.neighbors = {"LEFT": None, "RIGHT": None, "UP": None, "DOWN": None}
         self.next_cell = None
+        self.id = None
     
+    """Break the wall between two cells"""
     def break_wall(self, direction:str, next_cell) -> None:
         opposition_pos = {"LEFT": "RIGHT", "RIGHT": "LEFT", "UP": "DOWN", "DOWN": "UP"}
         self.walls[direction] = False
-        print(f"{self.pos} wall's after: {self.walls}")
         next_cell.walls[opposition_pos[direction]] = False
         
     """Check if all walls are broken"""
