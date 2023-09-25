@@ -16,7 +16,7 @@ Ces deux programmes; eux mêmes dotés de deux méthodes chacuns.
 ## Installation 
 Avant de lancer le projet, assurez vous d'avoir bien installé les prérequis nécessaires:
   ```sh
-  pip install -r requirements.txt
+  pip install customtkinter
   ```
 
 ## Le Projet
